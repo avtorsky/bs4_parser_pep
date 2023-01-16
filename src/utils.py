@@ -8,6 +8,8 @@ from exceptions import ParserFindTagException
 def get_response(session, url):
     try:
         response = session.get(url)
+        if response is None:
+            return
         response.encoding = 'utf-8'
         return response
     except RequestException:

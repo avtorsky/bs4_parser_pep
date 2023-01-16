@@ -16,12 +16,17 @@ from constants import (
 from outputs import control_output
 from utils import find_tag, get_response
 
+DOWNLOADS_DIR = 'downloads'
+LATEST_VERSIONS_MODE_RESULTS_HEADER = (
+    'Ссылка на документацию',
+    'Версия',
+    'Статус',
+)
+
 
 def whats_new(session):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
-    if response is None:
-        return
     soup = BeautifulSoup(response.text, features='lxml')
 
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
@@ -35,8 +40,6 @@ def whats_new(session):
         version_a_tag = find_tag(section, 'a')
         version_link = urljoin(whats_new_url, version_a_tag['href'])
         response = get_response(session, version_link)
-        if response is None:
-            continue
         soup = BeautifulSoup(response.text, features='lxml')
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
@@ -48,8 +51,6 @@ def whats_new(session):
 
 def latest_versions(session):
     response = get_response(session, MAIN_DOC_URL)
-    if response is None:
-        return
     soup = BeautifulSoup(response.text, features='lxml')
 
     sidebar = find_tag(soup, 'div', attrs={'class': 'sphinxsidebarwrapper'})
@@ -61,7 +62,7 @@ def latest_versions(session):
     else:
         raise Exception('Ничего не нашлось')
 
-    results = [('Ссылка на документацию', 'Версия', 'Статус')]
+    results = [LATEST_VERSIONS_MODE_RESULTS_HEADER]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
     for a_tag in a_tags:
         link = a_tag['href']
@@ -78,8 +79,6 @@ def latest_versions(session):
 def download(session):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     response = get_response(session, downloads_url)
-    if response is None:
-        return
     soup = BeautifulSoup(response.text, features='lxml')
 
     main_tag = find_tag(soup, 'div', {'role': 'main'})
@@ -90,7 +89,7 @@ def download(session):
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
 
-    downloads_dir = BASE_DIR / 'downloads'
+    downloads_dir = BASE_DIR / DOWNLOADS_DIR
     downloads_dir.mkdir(exist_ok=True)
     archive_path = downloads_dir / filename
 
@@ -104,8 +103,6 @@ def download(session):
 def pep(session):
     pep_url = MAIN_PEP_URL
     response = get_response(session, pep_url)
-    if response is None:
-        return
     soup = BeautifulSoup(response.text, features='lxml')
 
     main_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
@@ -121,8 +118,6 @@ def pep(session):
             logging.info(f'Неизвестный статус PEP: {status_key}')
         pep_link = urljoin(pep_url, find_tag(tr, 'a')['href'])
         response = get_response(session, pep_link)
-        if response is None:
-            continue
         soup = BeautifulSoup(response.text, features='lxml')
         status = find_tag(soup, text='Status').find_next('dd').text
         if status not in expected_status:
